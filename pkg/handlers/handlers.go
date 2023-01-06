@@ -1,12 +1,9 @@
-package main
+package handlers
 
 import (
-	"fmt"
+	"html/template"
 	"net/http"
-	"text/template"
 )
-
-const portNumber = ":8080"
 
 func Home(w http.ResponseWriter, _ *http.Request) {
 	renderTemplate(w, "./templates/home.html")
@@ -22,12 +19,4 @@ func renderTemplate(w http.ResponseWriter, tmpl string) {
 		panic(err)
 	}
 	temp.Execute(w, nil)
-}
-
-func main() {
-	http.HandleFunc("/", Home)
-	http.HandleFunc("/about", About)
-
-	fmt.Printf("Listening on port http://localhost%s", portNumber)
-	http.ListenAndServe(portNumber, nil)
 }
