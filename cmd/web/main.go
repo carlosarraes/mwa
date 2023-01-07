@@ -25,7 +25,7 @@ func main() {
 
 	handlers.NewTemplates(&app)
 
-	fmt.Printf("Listening on port http://localhost%s", portNumber)
+	fmt.Printf("Listening on port http://localhost%s\n", portNumber)
 
 	srv := &http.Server{
 		Addr:    portNumber,
