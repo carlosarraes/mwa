@@ -1,63 +1,73 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"net/http"
+	"path/filepath"
 )
 
 func Home(w http.ResponseWriter, _ *http.Request) {
-	renderTemplate(w, "./templates/home.page.tmpl")
+	renderTemplate(w, "home.page.tmpl")
 }
 
 func About(w http.ResponseWriter, _ *http.Request) {
-	renderTemplate(w, "./templates/about.page.tmpl")
+	renderTemplate(w, "about.page.tmpl")
 }
 
-func renderTemplateOld(w http.ResponseWriter, tmpl string) {
-	temp, err := template.ParseFiles(tmpl, "./templates/base.layout.tmpl")
+func renderTemplate(w http.ResponseWriter, tmpl string) {
+	tc, err := createTemplateCache()
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
-	temp.Execute(w, nil)
+
+	t, ok := tc[tmpl]
+	if !ok {
+		panic("Could not get template from cache")
+	}
+
+	buf := new(bytes.Buffer)
+	err = t.Execute(buf, nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	_, err = buf.WriteTo(w)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
-var tc = make(map[string]*template.Template)
+func createTemplateCache() (map[string]*template.Template, error) {
+	myCache := map[string]*template.Template{}
 
-func renderTemplate(w http.ResponseWriter, t string) {
-	var tmpl *template.Template
-	var err error
-	_, inMap := tc[t]
+	pages, err := filepath.Glob("./templates/*.page.tmpl")
+	if err != nil {
+		return myCache, err
+	}
 
-	if !inMap {
-		fmt.Println("\nCreating template cache")
-		err = createTemplateCache(t)
+	for _, page := range pages {
+		name := filepath.Base(page)
+		ts, err := template.New(name).ParseFiles(page)
 		if err != nil {
-			panic(err)
+			return myCache, err
 		}
-	} else {
-		fmt.Println("Using template")
+
+		matches, err := filepath.Glob("./templates/*.layout.tmpl")
+		if err != nil {
+			return myCache, err
+		}
+
+		if len(matches) > 0 {
+			ts, err = ts.ParseGlob("./templates/*.layout.tmpl")
+			if err != nil {
+				return myCache, err
+			}
+		}
+
+		myCache[name] = ts
 	}
 
-	tmpl = tc[t]
-
-	err = tmpl.Execute(w, nil)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func createTemplateCache(t string) error {
-	templates := []string{
-		t,
-		"./templates/base.layout.tmpl",
-	}
-
-	tmpl, err := template.ParseFiles(templates...)
-	if err != nil {
-		panic(err)
-	}
-
-	tc[t] = tmpl
-	return nil
+	return myCache, nil
 }
