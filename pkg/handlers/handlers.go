@@ -4,22 +4,48 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"mwa/pkg/config"
 	"net/http"
 	"path/filepath"
 )
 
-func Home(w http.ResponseWriter, _ *http.Request) {
+var Repo *Repository
+
+type Repository struct {
+	App *config.AppConfig
+}
+
+func NewRepo(a *config.AppConfig) *Repository {
+	return &Repository{
+		App: a,
+	}
+}
+
+func NewHandlers(r *Repository) {
+	Repo = r
+}
+
+func (m *Repository) Home(w http.ResponseWriter, _ *http.Request) {
 	renderTemplate(w, "home.page.tmpl")
 }
 
-func About(w http.ResponseWriter, _ *http.Request) {
+func (m *Repository) About(w http.ResponseWriter, _ *http.Request) {
 	renderTemplate(w, "about.page.tmpl")
 }
 
+var app *config.AppConfig
+
+func NewTemplates(a *config.AppConfig) {
+	app = a
+}
+
 func renderTemplate(w http.ResponseWriter, tmpl string) {
-	tc, err := createTemplateCache()
-	if err != nil {
-		fmt.Println(err)
+	var tc map[string]*template.Template
+
+	if app.UseCache {
+		tc = app.TemplateCache
+	} else {
+		tc, _ = CreateTemplateCache()
 	}
 
 	t, ok := tc[tmpl]
@@ -28,18 +54,15 @@ func renderTemplate(w http.ResponseWriter, tmpl string) {
 	}
 
 	buf := new(bytes.Buffer)
-	err = t.Execute(buf, nil)
-	if err != nil {
-		fmt.Println(err)
-	}
+	_ = t.Execute(buf, nil)
 
-	_, err = buf.WriteTo(w)
+	_, err := buf.WriteTo(w)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-func createTemplateCache() (map[string]*template.Template, error) {
+func CreateTemplateCache() (map[string]*template.Template, error) {
 	myCache := map[string]*template.Template{}
 
 	pages, err := filepath.Glob("./templates/*.page.tmpl")
