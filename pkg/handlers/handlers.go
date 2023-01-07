@@ -9,6 +9,17 @@ import (
 	"path/filepath"
 )
 
+type TemplateData struct {
+	StringMap map[string]string
+	IntMap    map[string]int
+	FloatMap  map[string]float32
+	Data      map[string]interface{}
+	CSFRToken string
+	Flash     string
+	Warning   string
+	Error     string
+}
+
 var Repo *Repository
 
 type Repository struct {
@@ -26,11 +37,16 @@ func NewHandlers(r *Repository) {
 }
 
 func (m *Repository) Home(w http.ResponseWriter, _ *http.Request) {
-	renderTemplate(w, "home.page.tmpl")
+	renderTemplate(w, "home.page.tmpl", &TemplateData{})
 }
 
 func (m *Repository) About(w http.ResponseWriter, _ *http.Request) {
-	renderTemplate(w, "about.page.tmpl")
+	stringMap := make(map[string]string)
+	stringMap["test"] = "Hello, again."
+
+	renderTemplate(w, "about.page.tmpl", &TemplateData{
+		StringMap: stringMap,
+	})
 }
 
 var app *config.AppConfig
@@ -39,7 +55,11 @@ func NewTemplates(a *config.AppConfig) {
 	app = a
 }
 
-func renderTemplate(w http.ResponseWriter, tmpl string) {
+func AddDefaultData(td *TemplateData) *TemplateData {
+	return td
+}
+
+func renderTemplate(w http.ResponseWriter, tmpl string, td *TemplateData) {
 	var tc map[string]*template.Template
 
 	if app.UseCache {
@@ -54,7 +74,10 @@ func renderTemplate(w http.ResponseWriter, tmpl string) {
 	}
 
 	buf := new(bytes.Buffer)
-	_ = t.Execute(buf, nil)
+
+	td = AddDefaultData(td)
+
+	_ = t.Execute(buf, td)
 
 	_, err := buf.WriteTo(w)
 	if err != nil {
