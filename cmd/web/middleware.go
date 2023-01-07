@@ -13,7 +13,11 @@ func NoSurf(next http.Handler) http.Handler {
 		HttpOnly: true,
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
-		Secure:   false,
+		Secure:   app.InProduction,
 	})
 	return csrfHandler
+}
+
+func SessionLoad(next http.Handler) http.Handler {
+	return session.LoadAndSave(next)
 }

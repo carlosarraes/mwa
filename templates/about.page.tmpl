@@ -8,6 +8,13 @@
         <p>Here is some content</p>
 
         <p>This comes from template: {{index .StringMap "test"}} </p>
+        <p>
+          {{if ne (index .StringMap "remote_ip") ""}}
+            Your remote ip address is: {{index .StringMap "remote_ip"}}
+          {{else}}
+            I dont know your ip address yet.
+          {{end}}
+        </p>
       </div>
     </div>
   </div>
